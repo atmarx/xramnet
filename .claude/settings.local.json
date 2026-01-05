@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(python -m venv:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(pip install:*)",
+      "Bash(nodeenv -p:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npx sv create:*)",
+      "Bash(npm show:*)",
+      "Bash(npm install)",
+      "Bash(git check-ignore:*)"
+    ]
+  }
+}
