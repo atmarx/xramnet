@@ -5,7 +5,7 @@ date: 2026-01-07
 tags: personal, free, junk
 ---
 
-It's a familiar groan now.  It begins with the family member in the car with me who realizes what's happening, and it quickly spreads to the entire car like a virus.
+It's a familiar groan now.  It begins when the first family member in the car with me feels us start to slow unexpectedly going past a pile of junk and realizes what's happening, and then it quickly spreads the rest of my passengers like a virus.
 
 "DAD.  LEAVE IT."
 
