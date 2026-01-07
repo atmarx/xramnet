@@ -2,7 +2,7 @@
 title: If It's Free, It's For Me
 description: On the joys of roadside treasure hunting, the patience of wives, and preparing for economic collapse one piece of junk at a time.
 date: 2026-01-07
-tags: personal, free
+tags: personal, free, junk
 ---
 
 It's a familiar groan now.  It begins with the family member in the car with me who realizes what's happening, and it quickly spreads to the entire car like a virus.

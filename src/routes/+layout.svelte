@@ -39,6 +39,6 @@
 	</main>
 
 	<footer>
-		<p>&copy; {new Date().getFullYear()} xram.net</p>
+		<p>&copy; {new Date().getFullYear()} Andrew Marx | <a href="https://github.com/atmarx/">github</a></p>
 	</footer>
 </div>
