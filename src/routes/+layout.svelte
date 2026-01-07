@@ -24,7 +24,7 @@
 				{:else}
 					<img src={logoSmall} alt="xram.net" class="site-logo" />
 				{/if}
-				xram.net
+				<span class="site-name-text">xram.net</span>
 			</a>
 			<div class="nav-links">
 				<a href="/about">About</a>

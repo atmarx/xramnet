@@ -497,6 +497,33 @@ footer {
 
 /* Responsive: stack on small screens */
 @media (max-width: 700px) {
+	nav {
+		padding: 1rem;
+	}
+
+	.site-name-text {
+		display: none;
+	}
+
+	.site-name.has-logo,
+	.site-name.has-logo-large {
+		padding-left: 4rem;
+	}
+
+	.site-logo {
+		height: 3.5rem;
+		top: -0.25rem;
+	}
+
+	.site-logo-large {
+		height: 4rem;
+		top: -0.25rem;
+	}
+
+	.nav-links {
+		gap: 1rem;
+	}
+
 	.musing-layout,
 	.project-layout {
 		grid-template-columns: 1fr;
@@ -505,5 +532,6 @@ footer {
 	.sidebar {
 		order: -1;
 		position: static;
+		margin-top: 0;
 	}
 }
