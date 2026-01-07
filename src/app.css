@@ -140,6 +140,11 @@ main {
 	padding: 2rem;
 }
 
+main h1 {
+	font-size: 2rem;
+	margin: 3rem 0 2rem;
+}
+
 footer {
 	padding: 2rem;
 	text-align: center;
@@ -154,7 +159,6 @@ footer {
 
 .home h1 {
 	font-size: 2.5rem;
-	margin-bottom: 0.5rem;
 }
 
 .tagline {
@@ -175,10 +179,6 @@ footer {
 }
 
 /* About page */
-.about h1 {
-	margin-bottom: 1.5rem;
-}
-
 .about p {
 	margin-bottom: 1rem;
 	line-height: 1.7;
@@ -187,11 +187,6 @@ footer {
 /* Projects page */
 .projects-page {
 	padding-top: 2rem;
-}
-
-.projects-page h1 {
-	font-size: 2rem;
-	margin-bottom: 0.5rem;
 }
 
 .subtitle {
@@ -264,11 +259,6 @@ footer {
 	padding-top: 2rem;
 }
 
-.musings-page h1 {
-	font-size: 2rem;
-	margin-bottom: 0.5rem;
-}
-
 .musings-list {
 	display: grid;
 	gap: 1.5rem;
@@ -315,11 +305,6 @@ footer {
 	margin-bottom: 2rem;
 }
 
-.musing-main header h1 {
-	font-size: 2rem;
-	margin-bottom: 0.5rem;
-}
-
 .musing-content {
 	line-height: 1.8;
 }
@@ -344,14 +329,15 @@ footer {
 	border-top: 1px solid var(--color-bg-secondary);
 }
 
-/* Musing sidebar */
-.musing-sidebar {
+/* sidebar */
+.sidebar {
 	background: rgba(255, 255, 255, 0.1);
 	border-radius: 8px;
 	padding: 1.5rem;
 	height: fit-content;
 	position: sticky;
-	top: 2rem;
+	align-self: start;
+	margin-top:4em;
 }
 
 .sidebar-section {
@@ -360,6 +346,11 @@ footer {
 
 .sidebar-section:last-child {
 	margin-bottom: 0;
+}
+
+.sidebar-url {
+	font-size:0.8rem;
+	margin-bottom: 0.75rem;
 }
 
 .sidebar-date {
@@ -406,9 +397,17 @@ footer {
 	margin-bottom: 2rem;
 }
 
-.project-main header h1 {
-	font-size: 2rem;
-	margin-bottom: 0.5rem;
+.project-image {
+	margin-bottom: 1.5rem;
+}
+
+.project-image img {
+	width: 100%;
+	height: auto;
+	display: block;
+	border-radius: 0.5em 0.5em 0 0;
+	mask-image: linear-gradient(to bottom, black calc(100% - 2em), transparent 100%);
+	-webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2em), transparent 100%);
 }
 
 .project-content {
@@ -420,7 +419,8 @@ footer {
 }
 
 .project-link {
-	margin-top: 2rem;
+	margin-top: 5rem;
+	text-align:center;
 }
 
 .visit-button {
@@ -444,23 +444,10 @@ footer {
 	border-top: 1px solid var(--color-bg-secondary);
 }
 
-.project-sidebar {
-	background: rgba(255, 255, 255, 0.1);
-	border-radius: 8px;
-	padding: 1.5rem;
-	height: fit-content;
-	position: sticky;
-	top: 2rem;
-}
 
 /* Unified tag page */
 .tag-page {
 	padding-top: 2rem;
-}
-
-.tag-page h1 {
-	font-size: 2rem;
-	margin-bottom: 0.5rem;
 }
 
 .tag-section {
@@ -515,8 +502,7 @@ footer {
 		grid-template-columns: 1fr;
 	}
 
-	.musing-sidebar,
-	.project-sidebar {
+	.sidebar {
 		order: -1;
 		position: static;
 	}

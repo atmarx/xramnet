@@ -4,6 +4,7 @@ description: An oral health compendium born from frustration with standard denta
 date: 2024-05-01
 tags: health, research, claude
 url: https://keepyourteeth.org
+image: /src/lib/assets/projects/keep-your-teeth.webp
 ---
 
 An oral health compendium born from frustration with standard dental advice. Covers enamel chemistry, microbiome science, botanical remedies, and modern innovations.

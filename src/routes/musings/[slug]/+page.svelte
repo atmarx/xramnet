@@ -46,9 +46,7 @@
 	<article class="musing">
 		<div class="musing-layout">
 			<div class="musing-main">
-				<header>
-					<h1>{data.metadata.title}</h1>
-				</header>
+				<h1>{data.metadata.title}</h1>
 
 				<div class="musing-content">
 					<data.content />
@@ -59,7 +57,7 @@
 				</footer>
 			</div>
 
-			<aside class="musing-sidebar">
+			<aside class="sidebar">
 				{#if dates.length > 0}
 					<div class="sidebar-section">
 						{#each dates as date, i}

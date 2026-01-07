@@ -1,6 +1,17 @@
 <script lang="ts">
 	let { data } = $props();
 
+	// Import all project images
+	const images = import.meta.glob('/src/lib/assets/projects/*.webp', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+
+	// Get image URL from metadata path by matching filename
+	function getImageUrl(imagePath: string | undefined): string | null {
+		if (!imagePath) return null;
+		const filename = imagePath.split('/').pop();
+		const entry = Object.entries(images).find(([key]) => key.endsWith('/' + filename));
+		return entry ? entry[1] : null;
+	}
+
 	const months = ['January', 'February', 'March', 'April', 'May', 'June',
 		'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -30,6 +41,8 @@
 
 	const pageDescription = $derived(data.type === 'post' ? data.metadata.description : null);
 
+	const imageUrl = $derived(data.type === 'post' ? getImageUrl(data.metadata.image) : null);
+
 	function getDateLabel(index: number) {
 		return index === 0 ? 'Added' : 'Updated';
 	}
@@ -46,13 +59,17 @@
 	<article class="project">
 		<div class="project-layout">
 			<div class="project-main">
-				<header>
-					<h1>{data.metadata.title}</h1>
-				</header>
+				<h1>{data.metadata.title}</h1>
 
 				<div class="project-content">
 					<data.content />
 				</div>
+
+				{#if imageUrl}
+					<div class="project-image">
+						<img src={imageUrl} alt="{data.metadata.title} screenshot" />
+					</div>
+				{/if}
 
 				{#if data.metadata.url}
 					<div class="project-link">
@@ -67,7 +84,7 @@
 				</footer>
 			</div>
 
-			<aside class="project-sidebar">
+			<aside class="sidebar">
 				{#if dates.length > 0}
 					<div class="sidebar-section">
 						{#each dates as date, i}
@@ -89,6 +106,16 @@
 						</div>
 					</div>
 				{/if}
+
+				{#if data.metadata.url}
+					<div class="sidebar-section">
+						<span class="sidebar-label">URL</span>
+						<div class="sidebar-url">
+							<a href={data.metadata.url} class="url">{data.metadata.url.replace(/^https?:\/\//, '')}</a>
+						</div>
+					</div>
+				{/if}
+
 			</aside>
 		</div>
 	</article>
