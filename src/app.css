@@ -314,6 +314,12 @@ footer {
 
 .musing-content {
 	line-height: 1.8;
+	overflow-wrap: break-word;
+	word-wrap: break-word;
+}
+
+.musing-main {
+	min-width: 0;
 }
 
 .musing-content p {
@@ -505,6 +511,10 @@ footer {
 /* Responsive: stack on small screens */
 @media (max-width: 700px) {
 	nav {
+		padding: 1rem;
+	}
+
+	main {
 		padding: 1rem;
 	}
 
