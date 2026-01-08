@@ -1,5 +1,5 @@
 ---
-title: The Space Between
+title: The Spaces Between
 description: A screed about double spaces and the bastards who took them from us.
 date: 2026-01-06
 tags: personal, rant, typography, space
@@ -23,7 +23,7 @@ The single-spacers have won, *of course*.&nbsp; They *always* win.&nbsp; The eff
 
 I know exactly what I'm doing.
 
-I'm refusing to let the bastards take everything.&nbsp; They have my data.&nbsp; They have my attention.&nbsp; They have my dopamine responses trained to their notification sounds.&nbsp; But they cannot have my double spaces.&nbsp; Those are mine.&nbsp; I put them there on purpose.&nbsp; I will keep putting them there, and they will keep removing them, and this is the war we are fighting now.&nbsp; Not for democracy or freedom or anything that means anything.&nbsp; Just the mundane battle over the space between.
+I'm refusing to let the bastards take everything.&nbsp; They have my data.&nbsp; They have my attention.&nbsp; They have my dopamine responses trained to their notification sounds.&nbsp; But they cannot have my double spaces.&nbsp; Those are mine.&nbsp; I put them there on purpose.&nbsp; I will keep putting them there, and they will keep removing them, and this is the war we are fighting now.&nbsp; Not for democracy or freedom or anything that means anything.&nbsp; Just the mundane battle over the spaces between.
 
 Two spaces after a period.&nbsp; Fight me.
 
