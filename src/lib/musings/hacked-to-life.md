@@ -13,11 +13,11 @@ A cryptominer had moved into my crypt.
 
 I use [Umami](https://umami.is) for privacy-respecting analytics—no cookies, no tracking, just simple page view counts. It runs in a Docker container alongside the main site. Standard stuff.
 
-When I set up the stack, I used Claude Code to help configure it. Initially it used `postgresql-latest`—which, unbeknownst to either of us, *already pointed to v3.0.3*. That would have been fine.
+When I set up the stack, I used Claude Code to help configure it. Initially it used `postgresql-latest`—which at the time, *already pointed to v3.0.3*. That would have been fine.
 
 But I'd [written about pinning versions](https://build.xram.net/concepts/versioning-and-lockfiles/) before, so I asked Claude Code to pin it properly. It tried `postgresql-v3.0.3`, following the v2 naming convention. That tag doesn't exist—Umami dropped both the `postgresql-` prefix and the `v` prefix for v3. The correct tag is just `3.0.3`. Instead of checking what `postgresql-latest` actually resolved to, Claude fell back to an old v2 tag it knew: `postgresql-v2.15.1`, from December 2023.
 
-The attempt to follow best practices accidentally **downgraded** me from v3.0.3 to a thirteen-month-old v2 with known vulnerabilities.
+The attempt to follow best practices accidentally **downgraded** me from v3.0.3 to a thirteen-month-old v2 release with known vulnerabilities.
 
 ## The Pin That Backfired
 
