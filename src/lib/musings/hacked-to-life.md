@@ -13,15 +13,17 @@ A cryptominer had moved into my crypt.
 
 I use [Umami](https://umami.is) for privacy-respecting analytics—no cookies, no tracking, just simple page view counts. It runs in a Docker container alongside the main site. Standard stuff.
 
-When I set up the stack, I used Claude Code to help configure it. Its training data knew Umami's v2 tagging scheme—tags like `postgresql-latest` and `postgresql-v2.x.x`. During initial dev, it pulled one of those, caching a v2 image locally.
+When I set up the stack, I used Claude Code to help configure it. Initially it used `postgresql-latest`—which, unbeknownst to either of us, *already pointed to v3.0.3*. That would have been fine.
 
-Later, I tried to pin to the current version. Claude Code suggested `ghcr.io/umami-software/umami:postgresql-v3.0.3`—which looks right, but isn't. Umami changed their tagging convention for v3: they dropped MySQL support, made PostgreSQL the default, and removed the `postgresql-` prefix entirely. The v3 tags are just `3.0.3`, `3.0`, `latest`.
+But I'd [written about pinning versions](https://build.xram.net/concepts/versioning-and-lockfiles/) before, so I asked Claude Code to pin it properly. It tried `postgresql-v3.0.3`, following the v2 naming convention. That tag doesn't exist—Umami dropped both the `postgresql-` prefix and the `v` prefix for v3. The correct tag is just `3.0.3`. Instead of checking what `postgresql-latest` actually resolved to, Claude fell back to an old v2 tag it knew: `postgresql-v2.15.1`, from December 2023.
 
-The tag `postgresql-v3.0.3` doesn't exist. Docker didn't error. It silently fell back to the cached v2 image.
+The attempt to follow best practices accidentally **downgraded** me from v3.0.3 to a thirteen-month-old v2 with known vulnerabilities.
 
-## The Tag That Wasn't
+## The Pin That Backfired
 
-I thought I was running v3.0.3. I was actually on v2.15.1—thirteen months old, with known vulnerabilities. Umami doesn't have a version display in its UI, so I had no easy way to verify. It was my first time using it; I assumed the pin worked.
+I assumed a pinned version meant I was being responsible. Instead, I'd gone backwards. Umami doesn't have a version display in its UI, so I had no easy way to verify. It was my first time using it.
+
+The irony: if I'd just left `postgresql-latest` alone, I'd have been on v3.0.3 the whole time.
 
 Three days of 100% CPU later, I popped open `htop` and found the squatter: random-string binaries tucked into `/app/.next/`, running as the unprivileged `nextjs` user.
 
@@ -53,9 +55,9 @@ This wasn't a sophisticated attack. It was an opportunistic exploit of a known v
 
 The failure here was a cascade of reasonable assumptions:
 
-1. **AI training cutoffs are real.** Claude Code knew Umami's old tagging scheme, not the new one. When tools suggest versions, verify them against the actual registry.
-2. **Silent failures are insidious.** Docker didn't complain about the non-existent tag. It just used what it had cached. No error, no warning.
-3. **Verification matters.** I assumed the pin worked. I never checked. Umami has no version display, but I could have run `docker inspect` or checked the image digest.
+1. **AI tools pattern-match on stale conventions.** Claude Code tried to use v2's naming scheme for v3. When it failed, it fell back to an old version instead of checking what the current tags actually resolved to. Neither of us verified.
+2. **"Pinned" doesn't mean "current."** A version pin locks you in place. Without something watching for updates, you're frozen on whatever you pinned—even if it's already stale.
+3. **Verification is my job.** The AI is a tool; I'm the operator. I could have checked `docker inspect`, compared image digests, or just looked at Umami's releases. I didn't.
 
 I've [written about version pinning](https://build.xram.net/concepts/versioning-and-lockfiles/) before—but pinning only works if the tag exists and you verify it resolves to what you expect.
 
