@@ -67,6 +67,33 @@ pre code {
 	padding: 0;
 }
 
+/* Tables */
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 1.5rem;
+}
+
+th, td {
+	padding: 0.75rem 1rem;
+	text-align: left;
+	border-bottom: 1px solid var(--color-bg-hover);
+}
+
+th {
+	background: rgba(255, 255, 255, 0.08);
+	font-weight: 600;
+	color: var(--color-text);
+}
+
+tr:nth-child(even) td {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+tr:hover td {
+	background: rgba(255, 255, 255, 0.06);
+}
+
 /* Layout */
 .site {
 	min-height: 100vh;
@@ -150,6 +177,10 @@ main {
 main h1 {
 	font-size: 2rem;
 	margin: 3rem 0 2rem;
+}
+
+h2 {
+	margin: 0.5em 0;
 }
 
 footer {

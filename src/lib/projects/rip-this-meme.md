@@ -2,7 +2,7 @@
 title: RIP This Meme
 description: A digital graveyard for dead memes. Press F to pay respects.
 date: 2026-01-12
-tags: ai, web development, nuxt, strapi
+tags: claude, web, nuxt, strapi, ripthismeme
 url: https://ripthis.meme
 image: /src/lib/assets/projects/meme-graveyard.webp
 ---

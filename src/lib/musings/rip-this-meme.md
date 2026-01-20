@@ -1,8 +1,8 @@
 ---
-title: RIP This Meme
+title: Building A Graveyard
 description: I spent four days building a graveyard for dead memes. The world is on fire, and I made a place to bury Dat Boi.
 date: 2026-01-12
-tags: ai, web development, building, internet culture
+tags: ai, web, building, internet culture, ripthismeme
 ---
 
 It started with a groan.

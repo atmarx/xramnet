@@ -13,6 +13,7 @@
 <svelte:head>
 	<title>xram.net</title>
 	<meta name="description" content="Personal portfolio and projects" />
+	<link rel="icon" href="/favicon.ico" />
 </svelte:head>
 
 <div class="site">

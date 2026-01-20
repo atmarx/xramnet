@@ -78,6 +78,22 @@ npm run build    # Static build to /build
 npm run preview  # Preview production build
 ```
 
+## Development Environment
+This project uses **nodeenv** (Node.js installed in a Python venv structure). When running in a **Flatpak-sandboxed environment** (like VSCode Flatpak), npm commands must be wrapped:
+
+```bash
+# Install dependencies
+flatpak-spawn --host bash -c "source .venv/bin/activate && npm install"
+
+# Add a new package
+flatpak-spawn --host bash -c "source .venv/bin/activate && npm install package-name"
+
+# Run any npm command
+flatpak-spawn --host bash -c "source .venv/bin/activate && npm run dev"
+```
+
+Direct `npm` commands will fail in the sandbox because the `.venv` activation and node binaries are on the host system.
+
 ## Deployment
 - Auto-deploys on push to `main` via GitHub Actions
 - Workflow: `.github/workflows/deploy.yml`

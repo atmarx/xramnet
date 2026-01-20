@@ -2,7 +2,7 @@
 title: Hacked to Life
 description: A meme graveyard, a cryptominer, and a cascade of silent failures
 date: 2026-01-19
-tags: security, docker, devops, incident
+tags: security, docker, devops, incident, ripthismeme
 ---
 
 [RipThis.Meme](https://ripthis.meme) is a graveyard for dead memes. It's still in its infancy, having just built it last weekend, but this morning the site wouldn't load at all and `htop` instantly showed the IoCs.

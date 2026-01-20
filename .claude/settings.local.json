@@ -12,7 +12,9 @@
       "Bash(npm show:*)",
       "Bash(npm install)",
       "Bash(git check-ignore:*)",
-      "Bash(cwebp:*)"
+      "Bash(cwebp:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)"
     ]
   }
 }
