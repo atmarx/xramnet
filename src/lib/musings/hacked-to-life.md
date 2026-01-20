@@ -5,7 +5,7 @@ date: 2026-01-19
 tags: security, docker, devops, incident
 ---
 
-[RipThis.Meme](https://ripthis.meme) is a graveyard for dead memes. It's still in its infancy, having just built it last weekend, but we all know what happens if you sleep on your security for even what feels like the briefest of moments.
+[RipThis.Meme](https://ripthis.meme) is a graveyard for dead memes. It's still in its infancy, having just built it last weekend, but this morning the site wouldn't load at all and `htop` instantly showed the IoCs.
 
 A cryptominer had moved into my crypt.
 
