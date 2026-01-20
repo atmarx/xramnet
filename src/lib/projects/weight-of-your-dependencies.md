@@ -7,7 +7,7 @@ url: https://build.xram.net
 image: /src/lib/assets/projects/weight-of-your-dependencies.webp
 ---
 
-Same motivation as [the licensing guide](./open-source-licensing-guide.md): my day job means watching researchers and engineers wrestle with concepts that existing documentation assumes you already understand. The textbooks are written for professional developers. But when a physicist asks "why does my container build differently every time?" or an engineer wonders "is it safe to install this package?", they need answers that connect to their actual concerns, not abstract best practices.
+Same motivation as [the licensing guide](open-source-licensing-guide): my day job means watching researchers and engineers wrestle with concepts that existing documentation assumes you already understand. The textbooks are written for professional developers. But when a physicist asks "why does my container build differently every time?" or an engineer wonders "is it safe to install this package?", they need answers that connect to their actual concerns, not abstract best practices.
 
 This guide is for people who run `pip install` or `npm install` without thinking about the dozens or hundreds of packages that command pulls in. Written for folks working with Python notebooks, containers, and production deployments who know something feels wrong but aren't sure what.
 
