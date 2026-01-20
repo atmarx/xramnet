@@ -4,6 +4,7 @@ description: Plain-language explanations of software licenses—MIT, GPL, Apache
 date: 2025-12-20
 tags: software, education, claude, devops, mkdocs
 url: https://libre.xram.net
+git: https://github.com/atmarx/open-source-licensing-guide
 image: /src/lib/assets/projects/open-source-licensing-guide.webp
 ---
 

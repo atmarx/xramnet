@@ -4,6 +4,7 @@ description: An oral health compendium born from frustration with standard denta
 date: 2025-12-28
 tags: health, research, claude, mkdocs
 url: https://keepyourteeth.org
+git: https://github.com/atmarx/keep-your-teeth
 image: /src/lib/assets/projects/keep-your-teeth.webp
 ---
 

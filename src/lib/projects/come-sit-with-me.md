@@ -4,6 +4,7 @@ description: A free perimenopause resource built with my wife Becky. Synthesizes
 date: 2026-01-05
 tags: health, education, claude, research, sveltekit
 url: https://comesitwith.me
+git: https://github.com/atmarx/come-sit-with-me
 image: /src/lib/assets/projects/come-sit-with-me.webp
 ---
 

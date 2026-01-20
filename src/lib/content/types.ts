@@ -6,6 +6,7 @@ export interface ContentMetadata {
 	date?: string;
 	tags?: string;
 	url?: string;
+	git?: string;
 	image?: string;
 	[key: string]: unknown;
 }

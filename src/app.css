@@ -397,6 +397,27 @@ footer {
 	margin-bottom: 0.75rem;
 }
 
+.sidebar-git {
+	font-size: 0.8rem;
+}
+
+.git-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	color: var(--color-text-muted);
+	text-decoration: none;
+	transition: color 0.2s;
+}
+
+.git-link:hover {
+	color: var(--color-text);
+}
+
+.git-link svg {
+	flex-shrink: 0;
+}
+
 .sidebar-date {
 	margin-bottom: 0.75rem;
 }

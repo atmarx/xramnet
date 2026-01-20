@@ -4,6 +4,7 @@ description: A mentor-style guide to dependency management and supply chain secu
 date: 2024-03-15
 tags: software, security, claude, research, mkdocs
 url: https://build.xram.net
+git: https://github.com/atmarx/building-software-guide
 image: /src/lib/assets/projects/weight-of-your-dependencies.webp
 ---
 
