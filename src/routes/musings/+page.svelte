@@ -25,13 +25,20 @@
 		<div class="musings-list">
 			{#each data.musings as musing}
 				<a href="/musings/{musing.slug}" class="musing-card">
-					<h2>{musing.title}</h2>
+					<div class="musing-header">
+						<h2>{musing.title}</h2>
+						{#if musing.date}
+							<time>{formatDate(musing.date)}</time>
+						{/if}
+					</div>
 					{#if musing.description}
 						<p>{musing.description}</p>
 					{/if}
-					{#if musing.date}
-						<time>{formatDate(musing.date)}</time>
-					{/if}
+					<div class="tags">
+						{#each musing.tags as tag}
+							<span class="tag">{tag}</span>
+						{/each}
+					</div>
 				</a>
 			{/each}
 		</div>

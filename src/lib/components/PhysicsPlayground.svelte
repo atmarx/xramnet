@@ -46,8 +46,8 @@
 		TAG_MIN_USE_MOBILE: 2,  // Only cross-linked tags on mobile
 		FRICTION_AIR: 0.08,      // Higher = more damping = calmer
 		RESTITUTION: 0.3,        // Lower = less bouncy
-		INITIAL_VELOCITY_MAX: 0.5,
-		BROWNIAN_FORCE: 0.00005, // Much gentler drift
+		INITIAL_VELOCITY_MAX: 2,  // Higher for more initial scatter
+		BROWNIAN_FORCE: 0.00008, // Gentle ambient drift
 		COLORS: {
 			musings: 'rgb(107, 159, 255)',
 			projects: 'rgb(100, 200, 150)',
@@ -168,16 +168,25 @@
 		}) as BlobBody;
 		centerBody.isCenter = true;
 
-		// Create tag bodies - spread around the whole screen
-		const tagCount = filteredTags.length;
-		let tagIndex = 0;
+		// Create tag bodies - randomly scattered across the canvas
+		const margin = 60;  // Keep away from edges
+		const centerExclusion = currentCenterRadius + 80;  // Keep away from center badge
+
+		function randomPosition() {
+			let x, y, dist, attempts = 0;
+			do {
+				x = margin + Math.random() * (width - margin * 2);
+				y = margin + Math.random() * (height - margin * 2 - (isMobile ? 0 : 80));  // Account for control bar
+				const dx = x - width / 2;
+				const dy = y - height / 2;
+				dist = Math.sqrt(dx * dx + dy * dy);
+				attempts++;
+			} while (dist < centerExclusion && attempts < 50);
+			return { x, y };
+		}
+
 		for (const [tagName, data] of filteredTags) {
-			// Distribute tags evenly around the screen edges
-			const angle = (tagIndex / tagCount) * Math.PI * 2 + Math.random() * 0.3;
-			const dist = Math.min(width, height) * 0.35 + Math.random() * 50;
-			const x = width / 2 + Math.cos(angle) * dist;
-			const y = height / 2 + Math.sin(angle) * dist;
-			tagIndex++;
+			const { x, y } = randomPosition();
 
 			const body = Matter.Bodies.circle(x, y, currentCircleRadius * 0.8, {
 				restitution: CONFIG.RESTITUTION,
@@ -198,16 +207,9 @@
 			tagBodies.set(tagName, body);
 		}
 
-		// Create post bodies - spread them out evenly
-		const postCount = allPosts.length;
-		let postIndex = 0;
+		// Create post bodies - randomly scattered
 		for (const post of allPosts) {
-			// Distribute posts in a ring, offset from tags
-			const angle = (postIndex / postCount) * Math.PI * 2 + Math.PI / postCount;
-			const dist = Math.min(width, height) * 0.25 + Math.random() * 30;
-			const x = width / 2 + Math.cos(angle) * dist;
-			const y = height / 2 + Math.sin(angle) * dist;
-			postIndex++;
+			const { x, y } = randomPosition();
 
 			const body = Matter.Bodies.circle(x, y, currentCircleRadius, {
 				restitution: CONFIG.RESTITUTION,

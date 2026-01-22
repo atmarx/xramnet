@@ -6,8 +6,8 @@
 	let highlightType = $state(null);
 	let triggerSwirl = $state(null);
 	let triggerShake = $state(null);
-	let springLength = $state(300);
-	let springStiffnessSlider = $state(3);  // Slider value 1-30
+	let springLength = $state(425);
+	let springStiffnessSlider = $state(30);  // Slider value 1-60
 	let springStiffness = $derived(springStiffnessSlider / 100000);
 	let mobileDrawerOpen = $state(false);
 	let isMobile = $state(false);
@@ -182,11 +182,11 @@
 			<div class="control-section sliders">
 				<label class="slider-group">
 					<span>Spring Length</span>
-					<input type="range" min="50" max="400" bind:value={springLength} />
+					<input type="range" min="50" max="800" bind:value={springLength} />
 				</label>
 				<label class="slider-group">
 					<span>Springiness</span>
-					<input type="range" min="1" max="30" bind:value={springStiffnessSlider} />
+					<input type="range" min="1" max="60" bind:value={springStiffnessSlider} />
 				</label>
 			</div>
 
@@ -255,11 +255,11 @@
 				<span class="drawer-label">Physics</span>
 				<label class="slider-group">
 					<span>Spring Length</span>
-					<input type="range" min="50" max="400" bind:value={springLength} />
+					<input type="range" min="50" max="800" bind:value={springLength} />
 				</label>
 				<label class="slider-group">
 					<span>Springiness</span>
-					<input type="range" min="1" max="30" bind:value={springStiffnessSlider} />
+					<input type="range" min="1" max="60" bind:value={springStiffnessSlider} />
 				</label>
 			</div>
 
