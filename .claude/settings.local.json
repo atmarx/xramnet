@@ -14,7 +14,9 @@
       "Bash(git check-ignore:*)",
       "Bash(cwebp:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(flatpak-spawn --host bash -c \"source .venv/bin/activate && npm run build\")",
+      "Bash(git commit:*)"
     ]
   }
 }
