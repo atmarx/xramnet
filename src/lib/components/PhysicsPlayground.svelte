@@ -3,41 +3,62 @@
 	import { browser } from '$app/environment';
 	import { loadAllContent } from '$lib/content/loader';
 	import type { ContentItem } from '$lib/content/types';
-	import { goto } from '$app/navigation';
 
 	// Props
-	let { highlightType = null, onSwirlReady = (_fn: () => void) => {}, onShakeReady = (_fn: () => void) => {} }: {
-		highlightType: 'musing' | 'project' | 'tag' | null,
-		onSwirlReady?: (fn: () => void) => void,
-		onShakeReady?: (fn: () => void) => void
+	let {
+		highlightType = null,
+		springLength = 200,
+		springStiffness = 0.001,
+		isMobile = false,
+		onSwirlReady = (_fn: () => void) => {},
+		onShakeReady = (_fn: () => void) => {},
+		onBlobClick = (_data: BlobClickData | null) => {}
+	}: {
+		highlightType: 'musing' | 'project' | 'tag' | null;
+		springLength?: number;
+		springStiffness?: number;
+		isMobile?: boolean;
+		onSwirlReady?: (fn: () => void) => void;
+		onShakeReady?: (fn: () => void) => void;
+		onBlobClick?: (data: BlobClickData | null) => void;
 	} = $props();
+
+	interface BlobClickData {
+		type: 'project' | 'musing' | 'tag';
+		title: string;
+		description?: string;
+		slug?: string;
+		tagName?: string;
+		position: { x: number; y: number };
+	}
 
 	// Matter.js types (loaded dynamically)
 	type MatterType = typeof import('matter-js');
 	let Matter: MatterType;
 
-	// Config - tweak these!
+	// Config
 	const CONFIG = {
-		TAG_MIN_USE: 1,
-		POST_CORNER_RADIUS: 12,
-		TAG_RADIUS: 20,
-		CONSTRAINT_STIFFNESS: 0.001,
-		CONSTRAINT_LENGTH: 250,
-		FRICTION_AIR: 0.015,       // Lower = less drag = more drift
-		RESTITUTION: 0.6,          // Bounciness
-		INITIAL_VELOCITY_MAX: 2,
-		BROWNIAN_FORCE: 0.0003,    // Random force applied each tick
+		CIRCLE_RADIUS_DESKTOP: 28,
+		CIRCLE_RADIUS_MOBILE: 14,
+		CENTER_RADIUS_DESKTOP: 130,  // Sized to match visual badge (~164x160)
+		CENTER_RADIUS_MOBILE: 90,    // Sized to match mobile badge (~118x115)
+		TAG_MIN_USE_DESKTOP: 1,
+		TAG_MIN_USE_MOBILE: 2,  // Only cross-linked tags on mobile
+		FRICTION_AIR: 0.08,      // Higher = more damping = calmer
+		RESTITUTION: 0.3,        // Lower = less bouncy
+		INITIAL_VELOCITY_MAX: 0.5,
+		BROWNIAN_FORCE: 0.00005, // Much gentler drift
 		COLORS: {
-			musings: 'rgba(107, 159, 255, 0.7)',    // Blue (accent)
-			projects: 'rgba(100, 200, 150, 0.7)',   // Green-teal
-			tags: 'rgba(136, 136, 136, 0.5)',       // Muted grey
-			constraint: 'rgba(136, 136, 136, 0.15)',
-			hover: 'rgba(139, 180, 255, 0.9)',
+			musings: 'rgb(107, 159, 255)',
+			projects: 'rgb(100, 200, 150)',
+			tags: 'rgb(100, 100, 100)',
+			center: 'rgba(26, 26, 46, 0.01)',
+			constraint: 'rgba(136, 136, 136, 0.2)',
 		}
 	};
 
-	interface PostBody extends Matter.Body {
-		postData?: {
+	interface BlobBody extends Matter.Body {
+		blobData?: {
 			type: 'musing' | 'project';
 			item: ContentItem;
 		};
@@ -45,6 +66,7 @@
 			name: string;
 			uses: number;
 		};
+		isCenter?: boolean;
 	}
 
 	let canvas: HTMLCanvasElement;
@@ -54,15 +76,21 @@
 	let runner: Matter.Runner;
 	let mouse: Matter.Mouse;
 	let mouseConstraint: Matter.MouseConstraint;
-	let hoveredBody: PostBody | null = null;
+	let hoveredBody: BlobBody | null = null;
 	let mouseDownPos: { x: number; y: number } | null = null;
-	const DRAG_THRESHOLD = 5; // pixels - if mouse moves more than this, it's a drag
+	let constraints: Matter.Constraint[] = [];
+	const DRAG_THRESHOLD = 5;
 	let width = 800;
 	let height = 600;
-	let allBodies: PostBody[] = [];
+	let allBodies: BlobBody[] = [];
 	let time = 0;
 	let tornadoActive = false;
 	let tornadoEndTime = 0;
+
+	// Reactive config based on mobile
+	const circleRadius = $derived(isMobile ? CONFIG.CIRCLE_RADIUS_MOBILE : CONFIG.CIRCLE_RADIUS_DESKTOP);
+	const centerRadius = $derived(isMobile ? CONFIG.CENTER_RADIUS_MOBILE : CONFIG.CENTER_RADIUS_DESKTOP);
+	const tagMinUse = $derived(isMobile ? CONFIG.TAG_MIN_USE_MOBILE : CONFIG.TAG_MIN_USE_DESKTOP);
 
 	// Load content
 	const musings = loadAllContent('musings');
@@ -86,86 +114,32 @@
 		}
 	}
 
-	// Filter tags by minimum usage
-	const filteredTags = Array.from(tagUsage.entries())
-		.filter(([_, data]) => data.count >= CONFIG.TAG_MIN_USE);
+	// Update constraint properties when sliders change
+	$effect(() => {
+		// Read props to ensure tracking
+		const length = springLength;
+		const stiffness = springStiffness;
 
-	// Measure text and cache sizes
-	const postSizeCache = new Map<string, { width: number; height: number; lines: string[] }>();
-
-	function measurePostSize(item: ContentItem): { width: number; height: number; lines: string[] } {
-		const cacheKey = item.slug;
-		if (postSizeCache.has(cacheKey)) {
-			return postSizeCache.get(cacheKey)!;
-		}
-
-		// Create temp canvas for measuring
-		const tempCanvas = document.createElement('canvas');
-		const ctx = tempCanvas.getContext('2d')!;
-		ctx.font = '14px system-ui, sans-serif';
-
-		const title = item.title;
-		const titleWidth = ctx.measureText(title).width;
-		const padding = 24; // 12px each side
-		const minWidth = 80;
-		const maxWidth = 180;
-
-		let lines: string[] = [title];
-		let finalWidth = Math.min(maxWidth, Math.max(minWidth, titleWidth + padding));
-
-		// If title is too wide, try to break into 2 balanced lines
-		if (titleWidth > maxWidth - padding) {
-			const words = title.split(' ');
-			if (words.length > 1) {
-				// Find the best split point for balanced lines
-				let bestSplit = 1;
-				let bestDiff = Infinity;
-
-				for (let i = 1; i < words.length; i++) {
-					const line1 = words.slice(0, i).join(' ');
-					const line2 = words.slice(i).join(' ');
-					const w1 = ctx.measureText(line1).width;
-					const w2 = ctx.measureText(line2).width;
-					const diff = Math.abs(w1 - w2);
-
-					if (diff < bestDiff) {
-						bestDiff = diff;
-						bestSplit = i;
-					}
-				}
-
-				const line1 = words.slice(0, bestSplit).join(' ');
-				const line2 = words.slice(bestSplit).join(' ');
-				lines = [line1, line2];
-
-				const maxLineWidth = Math.max(
-					ctx.measureText(line1).width,
-					ctx.measureText(line2).width
-				);
-				finalWidth = Math.min(maxWidth, Math.max(minWidth, maxLineWidth + padding));
+		if (constraints.length > 0 && Matter) {
+			for (const constraint of constraints) {
+				constraint.length = length;
+				constraint.stiffness = stiffness * 0.3;  // Match initial creation multiplier
 			}
 		}
-
-		// Height depends on number of lines
-		const lineHeight = 16;
-		const dateHeight = 14;
-		const vertPadding = 16;
-		const finalHeight = (lines.length * lineHeight) + dateHeight + vertPadding;
-
-		const result = { width: finalWidth, height: finalHeight, lines };
-		postSizeCache.set(cacheKey, result);
-		return result;
-	}
-
-	function getPostSize(item: ContentItem): { width: number; height: number } {
-		const { width, height } = measurePostSize(item);
-		return { width, height };
-	}
+	});
 
 	function setupPhysics() {
+		const currentTagMinUse = isMobile ? CONFIG.TAG_MIN_USE_MOBILE : CONFIG.TAG_MIN_USE_DESKTOP;
+		const currentCircleRadius = isMobile ? CONFIG.CIRCLE_RADIUS_MOBILE : CONFIG.CIRCLE_RADIUS_DESKTOP;
+		const currentCenterRadius = isMobile ? CONFIG.CENTER_RADIUS_MOBILE : CONFIG.CENTER_RADIUS_DESKTOP;
+
+		// Filter tags by minimum usage
+		const filteredTags = Array.from(tagUsage.entries())
+			.filter(([_, data]) => data.count >= currentTagMinUse);
+
 		// Create engine
 		engine = Matter.Engine.create();
-		engine.gravity.y = 0; // No gravity - floating in space
+		engine.gravity.y = 0;
 
 		// Create renderer
 		render = Matter.Render.create({
@@ -181,22 +155,37 @@
 		});
 
 		allBodies = [];
-		const postBodies = new Map<string, PostBody>(); // type:slug -> body
-		const tagBodies = new Map<string, PostBody>();  // tag name -> body
-		const constraints: Matter.Constraint[] = [];
+		const postBodies = new Map<string, BlobBody>();
+		const tagBodies = new Map<string, BlobBody>();
+		constraints = [];
 
-		// Create tag bodies at random positions
+		// Create center body (static, for collision)
+		const centerBody = Matter.Bodies.circle(width / 2, height / 2, currentCenterRadius, {
+			isStatic: true,
+			render: {
+				fillStyle: CONFIG.COLORS.center,
+			}
+		}) as BlobBody;
+		centerBody.isCenter = true;
+
+		// Create tag bodies - spread around the whole screen
+		const tagCount = filteredTags.length;
+		let tagIndex = 0;
 		for (const [tagName, data] of filteredTags) {
-			const x = Math.random() * (width - CONFIG.TAG_RADIUS * 4) + CONFIG.TAG_RADIUS * 2;
-			const y = Math.random() * (height - CONFIG.TAG_RADIUS * 4) + CONFIG.TAG_RADIUS * 2;
+			// Distribute tags evenly around the screen edges
+			const angle = (tagIndex / tagCount) * Math.PI * 2 + Math.random() * 0.3;
+			const dist = Math.min(width, height) * 0.35 + Math.random() * 50;
+			const x = width / 2 + Math.cos(angle) * dist;
+			const y = height / 2 + Math.sin(angle) * dist;
+			tagIndex++;
 
-			const body = Matter.Bodies.circle(x, y, CONFIG.TAG_RADIUS, {
+			const body = Matter.Bodies.circle(x, y, currentCircleRadius * 0.8, {
 				restitution: CONFIG.RESTITUTION,
 				frictionAir: CONFIG.FRICTION_AIR,
 				render: {
 					fillStyle: CONFIG.COLORS.tags,
 				}
-			}) as PostBody;
+			}) as BlobBody;
 
 			body.tagData = { name: tagName, uses: data.count };
 
@@ -209,23 +198,26 @@
 			tagBodies.set(tagName, body);
 		}
 
-		// Create post bodies at random positions
+		// Create post bodies - spread them out evenly
+		const postCount = allPosts.length;
+		let postIndex = 0;
 		for (const post of allPosts) {
-			const size = getPostSize(post.item);
-			const x = Math.random() * (width - size.width) + size.width / 2;
-			const y = Math.random() * (height - size.height) + size.height / 2;
+			// Distribute posts in a ring, offset from tags
+			const angle = (postIndex / postCount) * Math.PI * 2 + Math.PI / postCount;
+			const dist = Math.min(width, height) * 0.25 + Math.random() * 30;
+			const x = width / 2 + Math.cos(angle) * dist;
+			const y = height / 2 + Math.sin(angle) * dist;
+			postIndex++;
 
-			const body = Matter.Bodies.rectangle(x, y, size.width, size.height, {
+			const body = Matter.Bodies.circle(x, y, currentCircleRadius, {
 				restitution: CONFIG.RESTITUTION,
 				frictionAir: CONFIG.FRICTION_AIR,
-				chamfer: { radius: CONFIG.POST_CORNER_RADIUS },
-				inertia: Infinity,  // Prevent rotation
 				render: {
 					fillStyle: CONFIG.COLORS[post.type === 'musing' ? 'musings' : 'projects'],
 				}
-			}) as PostBody;
+			}) as BlobBody;
 
-			body.postData = { type: post.type, item: post.item };
+			body.blobData = { type: post.type, item: post.item };
 
 			Matter.Body.setVelocity(body, {
 				x: (Math.random() - 0.5) * CONFIG.INITIAL_VELOCITY_MAX * 2,
@@ -236,7 +228,7 @@
 			postBodies.set(`${post.type}:${post.item.slug}`, body);
 		}
 
-		// Create constraints between tags and their posts
+		// Connect tags to their posts with very soft springs
 		for (const [tagName, data] of filteredTags) {
 			const tagBody = tagBodies.get(tagName)!;
 			for (const post of data.posts) {
@@ -245,8 +237,8 @@
 					const constraint = Matter.Constraint.create({
 						bodyA: tagBody,
 						bodyB: postBody,
-						stiffness: CONFIG.CONSTRAINT_STIFFNESS,
-						length: CONFIG.CONSTRAINT_LENGTH,
+						stiffness: springStiffness * 0.3,  // Very soft
+						length: springLength,
 						render: {
 							strokeStyle: CONFIG.COLORS.constraint,
 							lineWidth: 1,
@@ -257,17 +249,18 @@
 			}
 		}
 
-		// Create walls
+		// Create walls (bottom wall raised to keep blobs above control bar)
 		const wallThickness = 50;
+		const bottomMargin = isMobile ? 0 : 80;  // Space for control bar on desktop
 		const walls = [
 			Matter.Bodies.rectangle(width / 2, -wallThickness / 2, width, wallThickness, { isStatic: true, render: { visible: false } }),
-			Matter.Bodies.rectangle(width / 2, height + wallThickness / 2, width, wallThickness, { isStatic: true, render: { visible: false } }),
+			Matter.Bodies.rectangle(width / 2, height - bottomMargin + wallThickness / 2, width, wallThickness, { isStatic: true, render: { visible: false } }),
 			Matter.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true, render: { visible: false } }),
 			Matter.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true, render: { visible: false } }),
 		];
 
 		// Add everything to the world
-		Matter.Composite.add(engine.world, [...allBodies, ...walls, ...constraints]);
+		Matter.Composite.add(engine.world, [centerBody, ...allBodies, ...walls, ...constraints]);
 
 		// Mouse interaction
 		mouse = Matter.Mouse.create(canvas);
@@ -279,132 +272,113 @@
 			}
 		});
 		Matter.Composite.add(engine.world, mouseConstraint);
-
-		// Keep mouse in sync with render
 		render.mouse = mouse;
 
 		// Custom rendering for text labels
 		Matter.Events.on(render, 'afterRender', () => {
 			const ctx = render.context;
+			const currentRadius = isMobile ? CONFIG.CIRCLE_RADIUS_MOBILE : CONFIG.CIRCLE_RADIUS_DESKTOP;
 
 			for (const body of allBodies) {
 				const pos = body.position;
+				const isHovered = hoveredBody === body;
 
-				if (body.postData) {
-					// Draw post label
-					const item = body.postData.item;
-					const size = getPostSize(item);
-					const isHovered = hoveredBody === body;
-					const isFilterHighlighted = highlightType && body.postData.type === highlightType;
-					const isDimmed = highlightType && (highlightType === 'tag' || body.postData.type !== highlightType);
+				if (body.blobData) {
+					const item = body.blobData.item;
+					const isFilterHighlighted = highlightType && body.blobData.type === highlightType;
 
-					// Draw dark overlay on dimmed items to fade the blob background
-					if (isDimmed) {
+					// Glow effect for highlighted items
+					if (isFilterHighlighted) {
 						ctx.save();
-						ctx.globalAlpha = 0.7;
-						ctx.fillStyle = '#1a1a2e';
-						ctx.beginPath();
-						ctx.roundRect(
-							pos.x - size.width / 2,
-							pos.y - size.height / 2,
-							size.width,
-							size.height,
-							CONFIG.POST_CORNER_RADIUS
-						);
-						ctx.fill();
-						ctx.restore();
-					}
-
-					// Glow effect for filter-highlighted or hovered items
-					if (isFilterHighlighted || isHovered) {
-						ctx.save();
-						const glowPadding = isHovered ? 6 : 4;
-						const glowColor = body.postData.type === 'project'
-							? 'rgba(100, 200, 150, 0.4)'
-							: 'rgba(107, 159, 255, 0.4)';
+						const glowColor = body.blobData.type === 'project'
+							? 'rgba(100, 200, 150, 0.6)'
+							: 'rgba(107, 159, 255, 0.6)';
+						ctx.shadowColor = glowColor;
+						ctx.shadowBlur = 15;
 						ctx.fillStyle = glowColor;
 						ctx.beginPath();
-						ctx.roundRect(
-							pos.x - size.width / 2 - glowPadding,
-							pos.y - size.height / 2 - glowPadding,
-							size.width + glowPadding * 2,
-							size.height + glowPadding * 2,
-							CONFIG.POST_CORNER_RADIUS + glowPadding
-						);
+						ctx.arc(pos.x, pos.y, currentRadius + 4, 0, Math.PI * 2);
 						ctx.fill();
 						ctx.restore();
 					}
 
+					// Text label centered on circle
 					ctx.save();
-					ctx.fillStyle = isHovered ? '#fff' : '#e0e0e0';
-					ctx.font = `${isHovered ? 'bold ' : ''}14px system-ui, sans-serif`;
+					ctx.font = `${isMobile ? '10' : '13'}px system-ui, sans-serif`;
 					ctx.textAlign = 'center';
 					ctx.textBaseline = 'middle';
 
-					// Use cached lines for multi-line titles
-					const { lines } = measurePostSize(item);
-					const lineHeight = 16;
-					const totalTextHeight = lines.length * lineHeight;
-					const dateOffset = 10;
-					const startY = pos.y - (totalTextHeight / 2) - (dateOffset / 2) + (lineHeight / 2);
+					// No truncation - show full title
+					const title = item.title;
+					const textMetrics = ctx.measureText(title);
+					const textHeight = isMobile ? 14 : 18;
+					const padding = 6;
+					const pillWidth = textMetrics.width + padding * 2;
+					const pillHeight = textHeight + padding;
+					const pillX = pos.x - pillWidth / 2;
+					const pillY = pos.y - pillHeight / 2;
 
-					for (let i = 0; i < lines.length; i++) {
-						ctx.fillText(lines[i], pos.x, startY + (i * lineHeight));
-					}
+					// Background pill (solid color)
+					ctx.fillStyle = body.blobData.type === 'project'
+						? CONFIG.COLORS.projects
+						: CONFIG.COLORS.musings;
+					ctx.beginPath();
+					ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 6);
+					ctx.fill();
 
-					// Date below
-					ctx.font = '11px system-ui, sans-serif';
+					// Text with drop shadow
+					ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+					ctx.shadowBlur = 0;
+					ctx.shadowOffsetX = 0;
+					ctx.shadowOffsetY = 1;
 					ctx.fillStyle = '#fff';
-					const dateStr = new Date(item.date.split(',')[0]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-					ctx.fillText(dateStr, pos.x, startY + (lines.length * lineHeight) + 4);
+					ctx.fillText(title, pos.x, pos.y);
 					ctx.restore();
 
 				} else if (body.tagData) {
-					// Draw tag label
-					const isHovered = hoveredBody === body;
 					const isFilterHighlighted = highlightType === 'tag';
-					const isDimmed = highlightType && highlightType !== 'tag';
+					const tagRadius = currentRadius * 0.8;
 
-					// Draw dark overlay on dimmed tags to fade the blob background
-					if (isDimmed) {
+					// Glow effect for highlighted tags
+					if (isFilterHighlighted) {
 						ctx.save();
-						ctx.globalAlpha = 0.7;
-						ctx.fillStyle = '#1a1a2e';
+						ctx.shadowColor = 'rgba(180, 180, 180, 0.5)';
+						ctx.shadowBlur = 12;
+						ctx.fillStyle = 'rgba(180, 180, 180, 0.4)';
 						ctx.beginPath();
-						ctx.arc(pos.x, pos.y, CONFIG.TAG_RADIUS, 0, Math.PI * 2);
+						ctx.arc(pos.x, pos.y, tagRadius + 3, 0, Math.PI * 2);
 						ctx.fill();
 						ctx.restore();
 					}
 
-					// Glow effect for filter-highlighted or hovered tags
-					if (isFilterHighlighted || isHovered) {
-						ctx.save();
-						ctx.beginPath();
-						const glowRadius = isHovered ? CONFIG.TAG_RADIUS + 5 : CONFIG.TAG_RADIUS + 3;
-						ctx.arc(pos.x, pos.y, glowRadius, 0, Math.PI * 2);
-						ctx.fillStyle = 'rgba(136, 136, 136, 0.4)';
-						ctx.fill();
-						ctx.restore();
-					}
-
+					// Tag label centered on circle
 					ctx.save();
-					ctx.fillStyle = isHovered ? '#fff' : '#ccc';
-					ctx.font = `${isHovered ? 'bold ' : ''}11px system-ui, sans-serif`;
+					ctx.font = `${isMobile ? '9' : '11'}px system-ui, sans-serif`;
 					ctx.textAlign = 'center';
 					ctx.textBaseline = 'middle';
 
-					// Split multi-word tags onto separate lines
 					const tagName = body.tagData.name;
-					const tagWords = tagName.split(' ');
-					if (tagWords.length > 1) {
-						const tagLineHeight = 12;
-						const startY = pos.y - ((tagWords.length - 1) * tagLineHeight) / 2;
-						for (let i = 0; i < tagWords.length; i++) {
-							ctx.fillText(tagWords[i], pos.x, startY + (i * tagLineHeight));
-						}
-					} else {
-						ctx.fillText(tagName, pos.x, pos.y);
-					}
+					const textMetrics = ctx.measureText(tagName);
+					const textHeight = isMobile ? 12 : 15;
+					const padding = 4;
+					const pillWidth = textMetrics.width + padding * 2;
+					const pillHeight = textHeight + padding;
+					const pillX = pos.x - pillWidth / 2;
+					const pillY = pos.y - pillHeight / 2;
+
+					// Background pill (solid color)
+					ctx.fillStyle = CONFIG.COLORS.tags;
+					ctx.beginPath();
+					ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 5);
+					ctx.fill();
+
+					// Text with drop shadow
+					ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+					ctx.shadowBlur = 0;
+					ctx.shadowOffsetX = 0;
+					ctx.shadowOffsetY = 1;
+					ctx.fillStyle = '#fff';
+					ctx.fillText(tagName, pos.x, pos.y);
 					ctx.restore();
 				}
 			}
@@ -414,26 +388,13 @@
 		Matter.Events.on(mouseConstraint, 'mousemove', () => {
 			const mousePos = mouse.position;
 			hoveredBody = null;
+			const currentRadius = isMobile ? CONFIG.CIRCLE_RADIUS_MOBILE : CONFIG.CIRCLE_RADIUS_DESKTOP;
 
 			for (const body of allBodies) {
-				let isInside = false;
+				const dist = Math.hypot(body.position.x - mousePos.x, body.position.y - mousePos.y);
+				const bodyRadius = body.tagData ? currentRadius * 0.8 : currentRadius;
 
-				if (body.postData) {
-					// Rectangle hit test
-					const size = getPostSize(body.postData.item);
-					const halfW = size.width / 2;
-					const halfH = size.height / 2;
-					isInside = mousePos.x >= body.position.x - halfW &&
-					           mousePos.x <= body.position.x + halfW &&
-					           mousePos.y >= body.position.y - halfH &&
-					           mousePos.y <= body.position.y + halfH;
-				} else {
-					// Circle hit test for tags
-					const dist = Math.hypot(body.position.x - mousePos.x, body.position.y - mousePos.y);
-					isInside = dist < CONFIG.TAG_RADIUS;
-				}
-
-				if (isInside) {
+				if (dist < bodyRadius + 5) {
 					hoveredBody = body;
 					canvas.style.cursor = 'pointer';
 					break;
@@ -445,12 +406,12 @@
 			}
 		});
 
-		// Track mouse down position
+		// Track mouse down
 		Matter.Events.on(mouseConstraint, 'mousedown', () => {
 			mouseDownPos = { x: mouse.position.x, y: mouse.position.y };
 		});
 
-		// Handle clicks (only if not dragged)
+		// Handle clicks
 		Matter.Events.on(mouseConstraint, 'mouseup', () => {
 			if (mouseDownPos) {
 				const dist = Math.hypot(
@@ -458,41 +419,52 @@
 					mouse.position.y - mouseDownPos.y
 				);
 
-				// Only navigate if it wasn't a drag
-				if (dist < DRAG_THRESHOLD) {
-					if (hoveredBody?.postData) {
-						const { type, item } = hoveredBody.postData;
-						goto(`/${type}s/${item.slug}`);
-					} else if (hoveredBody?.tagData) {
-						goto(`/tag/${hoveredBody.tagData.name}`);
+				if (dist < DRAG_THRESHOLD && hoveredBody) {
+					if (hoveredBody.blobData) {
+						const { type, item } = hoveredBody.blobData;
+						onBlobClick({
+							type,
+							title: item.title,
+							description: item.description,
+							slug: item.slug,
+							position: { x: hoveredBody.position.x, y: hoveredBody.position.y }
+						});
+					} else if (hoveredBody.tagData) {
+						onBlobClick({
+							type: 'tag',
+							title: `#${hoveredBody.tagData.name}`,
+							tagName: hoveredBody.tagData.name,
+							description: `${hoveredBody.tagData.uses} items with this tag`,
+							position: { x: hoveredBody.position.x, y: hoveredBody.position.y }
+						});
 					}
 				}
 			}
 			mouseDownPos = null;
 		});
 
-		// Smooth drift motion using sine waves with per-body phase offsets
-		const bodyPhases = new Map<PostBody, { phaseX: number; phaseY: number; freqX: number; freqY: number }>();
+		// Physics: brownian motion and tornado
+		const bodyPhases = new Map<BlobBody, { phaseX: number; phaseY: number; freqX: number; freqY: number }>();
 		for (const body of allBodies) {
 			bodyPhases.set(body, {
 				phaseX: Math.random() * Math.PI * 2,
 				phaseY: Math.random() * Math.PI * 2,
-				freqX: 0.3 + Math.random() * 0.4,  // Vary frequency slightly per body
+				freqX: 0.3 + Math.random() * 0.4,
 				freqY: 0.3 + Math.random() * 0.4,
 			});
 		}
 
 		Matter.Events.on(engine, 'beforeUpdate', () => {
-			time += 0.016; // ~60fps
+			time += 0.016;
 			const centerX = width / 2;
 			const centerY = height / 2;
-			const margin = 50; // How far outside before we pull back
-			const pullStrength = 0.01; // Force to pull escaped bodies back
+			const margin = 50;
+			const pullStrength = 0.01;
 
 			for (const body of allBodies) {
 				if (body.isStatic) continue;
 
-				// Boundary enforcement - pull back escaped bodies
+				// Boundary enforcement
 				const pos = body.position;
 				let pullX = 0, pullY = 0;
 				if (pos.x < -margin) pullX = pullStrength;
@@ -506,21 +478,17 @@
 				const phases = bodyPhases.get(body)!;
 
 				if (tornadoActive && time < tornadoEndTime) {
-					// Tornado effect - swirling vortex
 					const dx = body.position.x - centerX;
 					const dy = body.position.y - centerY;
 					const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 					const angle = Math.atan2(dy, dx);
 
-					// Tangential force (spin) + slight inward pull
 					const tornadoStrength = 0.002;
 					const inwardPull = 0.0005;
 					const tangentX = -Math.sin(angle) * tornadoStrength;
 					const tangentY = Math.cos(angle) * tornadoStrength;
 					const inwardX = -dx / dist * inwardPull;
 					const inwardY = -dy / dist * inwardPull;
-
-					// Add some chaos
 					const chaos = 0.001;
 
 					Matter.Body.applyForce(body, body.position, {
@@ -528,21 +496,17 @@
 						y: tangentY + inwardY + (Math.random() - 0.5) * chaos
 					});
 				} else {
-					// Smooth brownian motion using sine waves
 					const forceX = Math.sin(time * phases.freqX + phases.phaseX) * CONFIG.BROWNIAN_FORCE;
 					const forceY = Math.sin(time * phases.freqY + phases.phaseY) * CONFIG.BROWNIAN_FORCE;
-
 					Matter.Body.applyForce(body, body.position, { x: forceX, y: forceY });
 				}
 			}
 
-			// Auto-disable tornado after duration
 			if (tornadoActive && time >= tornadoEndTime) {
 				tornadoActive = false;
 			}
 		});
 
-		// Run the engine and renderer
 		runner = Matter.Runner.create();
 		Matter.Runner.run(runner, engine);
 		Matter.Render.run(render);
@@ -551,7 +515,7 @@
 	function handleResize() {
 		if (!container) return;
 		width = window.innerWidth;
-		height = Math.min(600, window.innerHeight * 0.6);
+		height = window.innerHeight;
 
 		if (render) {
 			render.canvas.width = width;
@@ -560,17 +524,24 @@
 			render.options.height = height;
 
 			// Update walls
-			const walls = Matter.Composite.allBodies(engine.world).filter(b => b.isStatic);
+			const walls = Matter.Composite.allBodies(engine.world).filter(b => b.isStatic && !b.isCenter);
 			Matter.Composite.remove(engine.world, walls);
 
 			const wallThickness = 50;
+			const bottomMargin = isMobile ? 0 : 80;  // Space for control bar on desktop
 			const newWalls = [
 				Matter.Bodies.rectangle(width / 2, -wallThickness / 2, width, wallThickness, { isStatic: true, render: { visible: false } }),
-				Matter.Bodies.rectangle(width / 2, height + wallThickness / 2, width, wallThickness, { isStatic: true, render: { visible: false } }),
+				Matter.Bodies.rectangle(width / 2, height - bottomMargin + wallThickness / 2, width, wallThickness, { isStatic: true, render: { visible: false } }),
 				Matter.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true, render: { visible: false } }),
 				Matter.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true, render: { visible: false } }),
 			];
 			Matter.Composite.add(engine.world, newWalls);
+
+			// Update center body position
+			const centerBody = Matter.Composite.allBodies(engine.world).find(b => (b as BlobBody).isCenter);
+			if (centerBody) {
+				Matter.Body.setPosition(centerBody, { x: width / 2, y: height / 2 });
+			}
 		}
 	}
 
@@ -580,7 +551,6 @@
 	}
 
 	function triggerShake() {
-		// Add random velocity to all bodies - monte carlo style energy burst
 		for (const body of allBodies) {
 			if (body.isStatic) continue;
 			const strength = 8;
@@ -594,14 +564,12 @@
 	onMount(async () => {
 		if (!browser) return;
 
-		// Dynamically import Matter.js (client-side only)
 		Matter = await import('matter-js');
 
 		handleResize();
 		setupPhysics();
 		window.addEventListener('resize', handleResize);
 
-		// Expose functions to parent
 		onSwirlReady(triggerSwirl);
 		onShakeReady(triggerShake);
 	});
@@ -621,16 +589,11 @@
 
 <style>
 	.physics-container {
-		/* Break out of centered container to full viewport width */
-		width: 100vw;
-		position: relative;
-		left: 50%;
-		right: 50%;
-		margin-left: -50vw;
-		margin-right: -50vw;
-		height: 600px;
-		max-height: 60vh;
-		margin-top: 2rem;
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
 		overflow: hidden;
 	}
 

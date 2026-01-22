@@ -1,8 +1,8 @@
 /* Variables */
 :root {
-	--color-bg: #0f0f0f;
-	--color-bg-secondary: #1a1a1a;
-	--color-bg-hover: #222;
+	--color-bg: #0f131e;
+	--color-bg-secondary: #171c29;
+	--color-bg-hover: #1c2232;
 	--color-text: #e0e0e0;
 	--color-text-muted: #888;
 	--color-accent: #6b9fff;
@@ -103,7 +103,7 @@ tr:hover td {
 
 header {
 	width: 100%;
-	background: linear-gradient(to bottom, var(--color-bg), #1a1a1a);
+	background: linear-gradient(to bottom, var(--color-bg), var(--color-bg-secondary));
 }
 
 nav {
@@ -172,6 +172,18 @@ main {
 	width: 100%;
 	margin: 0 auto;
 	padding: 2rem;
+}
+
+/* Homepage full-screen mode */
+.site.is-home {
+	height: 100vh;
+	overflow: hidden;
+}
+
+.site.is-home main {
+	max-width: none;
+	padding: 0;
+	margin: 0;
 }
 
 main h1 {

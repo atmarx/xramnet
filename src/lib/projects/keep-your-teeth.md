@@ -1,6 +1,6 @@
 ---
 title: Keep Your Teeth
-description: An oral health compendium born from frustration with standard dental advice. Covers enamel chemistry, microbiome science, botanical remedies, and modern innovations.
+description: An oral health compendium born from frustration with standard dental advice. Covers enamel chemistry, microbiome science, botanical remedies, modern innovations, and more.
 date: 2025-12-28
 tags: health, research, claude, mkdocs
 url: https://keepyourteeth.org

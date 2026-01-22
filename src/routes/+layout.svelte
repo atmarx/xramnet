@@ -50,30 +50,30 @@
 	<link rel="icon" href="/favicon.ico" />
 </svelte:head>
 
-<div class="site">
-	<header>
-		<nav>
-			<a href="/" class="site-name" class:has-logo={isSubpage} class:has-logo-large={isHome}>
-				{#if isHome}
-					<img src={logoLarge} alt="xram.net" class="site-logo site-logo-large" />
-				{:else}
+<div class="site" class:is-home={isHome}>
+	{#if !isHome}
+		<header>
+			<nav>
+				<a href="/" class="site-name has-logo">
 					<img src={logoSmall} alt="xram.net" class="site-logo" />
-				{/if}
-				<span class="site-name-text">xram.net</span>
-			</a>
-			<div class="nav-links">
-				<a href="/about">About Me</a>
-				<a href="/projects">Projects</a>
-				<a href="/musings">Musings</a>
-			</div>
-		</nav>
-	</header>
+					<span class="site-name-text">xram.net</span>
+				</a>
+				<div class="nav-links">
+					<a href="/about">About Me</a>
+					<a href="/projects">Projects</a>
+					<a href="/musings">Musings</a>
+				</div>
+			</nav>
+		</header>
+	{/if}
 
 	<main>
 		{@render children()}
 	</main>
 
-	<footer>
-		<p>&copy; {new Date().getFullYear()} Andrew Marx | <a href="https://github.com/atmarx/">github</a></p>
-	</footer>
+	{#if !isHome}
+		<footer>
+			<p>&copy; {new Date().getFullYear()} Andrew Marx | <a href="https://github.com/atmarx/">github</a></p>
+		</footer>
+	{/if}
 </div>
