@@ -2,7 +2,7 @@
 title: The Weight of My Dependencies
 description: How I'm trying to unwedge myself from a life of being the linchpin.
 date: 2026-01-28
-tags: personal, rant, 
+tags: personal, rant, claude, writing, software
 ---
 
 I always thought the key to enjoying a life spent working with technology was possessing an innate desire to know how things worked underneath. Sunlight, radio waves, magnets?  Easy.  But how a high minded command like "download that file" could launch thousands upon thousands of events into motion?  Events that filter down through the various layers of silicon-etched abstractions, into and out of [all 8 OSI layers][^1], then sending those bits to various storage subsystems, each with their own auditing metadata generated, file system interactions, calls to *go and bring us these bits—on the double! put these ones back!*—the rippling back and forth across networks and chips that happens in search of your file.
