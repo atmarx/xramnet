@@ -79,20 +79,22 @@ npm run preview  # Preview production build
 ```
 
 ## Development Environment
-This project uses **nodeenv** (Node.js installed in a Python venv structure). When running in a **Flatpak-sandboxed environment** (like VSCode Flatpak), npm commands must be wrapped:
+This project uses **nodeenv** (Node.js installed in a Python venv structure). When running in a **Flatpak-sandboxed environment** (like VSCode Flatpak), commands must be wrapped with `flatpak-spawn --host`:
 
 ```bash
-# Install dependencies
+# npm commands (need venv activation)
 flatpak-spawn --host bash -c "source .venv/bin/activate && npm install"
-
-# Add a new package
-flatpak-spawn --host bash -c "source .venv/bin/activate && npm install package-name"
-
-# Run any npm command
 flatpak-spawn --host bash -c "source .venv/bin/activate && npm run dev"
+flatpak-spawn --host bash -c "source .venv/bin/activate && npm run build"
+
+# git commands (need host credentials)
+flatpak-spawn --host git push
+flatpak-spawn --host git pull
 ```
 
-Direct `npm` commands will fail in the sandbox because the `.venv` activation and node binaries are on the host system.
+Direct commands fail in the sandbox because:
+- npm: The `.venv` activation and node binaries are on the host system
+- git push/pull: Git credential helpers are configured on the host
 
 ## Deployment
 - Auto-deploys on push to `main` via GitHub Actions

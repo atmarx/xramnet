@@ -10,7 +10,7 @@ image: /src/lib/assets/projects/weight-of-your-dependencies.webp
 
 Same motivation as [the licensing guide](open-source-licensing-guide): my day job means watching researchers and engineers wrestle with concepts that existing documentation assumes you already understand. The textbooks are written for professional developers. But when a physicist asks "why does my container build differently every time?" or an engineer wonders "is it safe to install this package?", they need answers that connect to their actual concerns, not abstract best practices.
 
-This guide is for people who run `pip install` or `npm install` without thinking about the dozens or hundreds of packages that command pulls in. Written for folks working with Python notebooks, containers, and production deployments who know something feels wrong but aren't sure what.
+This guide is for people who run `pip install` or `npm install` without thinking about the dozens or hundreds of packages that command pulls in. I wrote it for folks working with Python notebooks, containers, and production deployments who know something feels wrong but aren't sure what.
 
 The guide covers foundational concepts like evaluation strategies and versioning approaches, security concerns from supply chain vulnerabilities to software bills of materials, practical techniques for reproducibility and development hygiene, and ecosystem-specific guidance for Node.js, Python, Go, Rust, and AI/ML development.
 
