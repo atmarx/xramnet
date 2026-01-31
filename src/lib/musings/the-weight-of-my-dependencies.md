@@ -5,7 +5,7 @@ date: 2026-01-28
 tags: personal, rant, claude, writing, software
 ---
 
-I always thought the key to enjoying a life spent working with technology was possessing an innate desire to know how things worked underneath. Sunlight, radio waves, magnets?  Easy.  But how a high minded command like "download that file" could launch thousands upon thousands of events into motion?  Events that filter down through the various layers of silicon-etched abstractions, into and out of [all 8 OSI layers][^1], then sending those bits to various storage subsystems, each with their own auditing metadata generated, file system interactions, calls to *go and bring us these bits—on the double! put these ones back!*—the rippling back and forth across networks and chips that happens in search of your file.
+I always thought the key to enjoying a life spent working with technology was possessing an innate desire to know how things worked underneath. Sunlight, radio waves, magnets?  Easy.  But how a high minded command like "download that file" could launch thousands upon thousands of events into motion?  Events that filter down through the various layers of silicon-etched abstractions, into and out of [all 8 OSI layers](https://en.wikipedia.org/wiki/OSI_model)[^1], then sending those bits to various storage subsystems, each with their own auditing metadata generated, file system interactions, calls to *go and bring us these bits—on the double! put these ones back!*—the rippling back and forth across networks and chips that happens in search of your file.
 
 The fun thing about these abstractions is: they work whether you understand them or not. The functions fire, the traffic is generated, and for a vast majority of the users out there, it's *just magic*.
 
