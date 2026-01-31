@@ -1,0 +1,21 @@
+steps:
+  - name: deploy
+    image: alpine:latest
+    commands:
+      - apk add --no-cache git docker-cli docker-cli-compose
+      # Clone if first run, otherwise pull
+      - |
+        if [ ! -d /projects/${CI_REPO_NAME} ]; then
+          git clone ${CI_REPO_CLONE_URL} /projects/${CI_REPO_NAME}
+        fi
+      - cd /projects/${CI_REPO_NAME}
+      - git fetch origin
+      - git checkout ${CI_COMMIT_BRANCH}
+      - git pull origin ${CI_COMMIT_BRANCH}
+      - docker compose up -d --build
+      - docker image prune -f
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/projects:/projects
+    when:
+      branch: main

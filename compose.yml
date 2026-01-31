@@ -1,0 +1,15 @@
+services:
+  xramnet-app:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - default
+      - gateway
+
+networks:
+  default:
+  gateway:
+    external: true
+    name: gateway-stack_gateway

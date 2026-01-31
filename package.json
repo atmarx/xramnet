@@ -23,6 +23,7 @@
 	"dependencies": {
 		"@sveltejs/adapter-static": "^3.0.10",
 		"matter-js": "^0.20.0",
-		"mdsvex": "^0.12.6"
+		"mdsvex": "^0.12.6",
+		"remark-gfm": "^4.0.1"
 	}
 }
