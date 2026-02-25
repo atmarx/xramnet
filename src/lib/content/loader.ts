@@ -1,7 +1,10 @@
 import { contentTypes, type ContentType } from './config';
 import type { ContentItem, ContentModule, ContentMetadata } from './types';
 
-function parseMetadata(metadata: ContentMetadata, slug: string): ContentItem {
+function parseMetadata(metadata: ContentMetadata | undefined, slug: string): ContentItem | null {
+	// Skip files without valid frontmatter
+	if (!metadata) return null;
+
 	const tags = metadata.tags
 		? String(metadata.tags)
 				.split(',')
@@ -43,6 +46,8 @@ export function loadAllContent(type: ContentType): ContentItem[] {
 
 		const slug = getSlugFromPath(path);
 		const item = parseMetadata(module.metadata, slug);
+		if (!item) continue;  // Skip files without valid frontmatter
+		if (module.metadata?.draft) continue;  // Skip drafts
 		item.content = module.default;
 		items.push(item);
 	}
@@ -55,8 +60,10 @@ export function getContentBySlug(type: ContentType, slug: string): ContentItem |
 	const module = allModules[path];
 
 	if (!module) return null;
+	if (module.metadata?.draft) return null;  // Skip drafts
 
 	const item = parseMetadata(module.metadata, slug);
+	if (!item) return null;  // Skip files without valid frontmatter
 	item.content = module.default;
 	return item;
 }

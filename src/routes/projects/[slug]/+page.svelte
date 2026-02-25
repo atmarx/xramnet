@@ -1,4 +1,9 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import MiniGalaxy, { type NodeClickData } from '$lib/components/MiniGalaxy.svelte';
+	import PreviewCard from '$lib/components/PreviewCard.svelte';
+
 	let { data } = $props();
 
 	// Import all project images
@@ -45,6 +50,47 @@
 
 	function getDateLabel(index: number) {
 		return index === 0 ? 'Added' : 'Updated';
+	}
+
+	// MiniGalaxy state
+	let selectedNode: NodeClickData | null = $state(null);
+	let isDesktop = $state(false);
+
+	// Responsive galaxy sizing - larger on ultrawide
+	const galaxySize = $derived.by(() => {
+		if (!browser) return { width: 300, height: 350 };
+		if (window.innerWidth >= 2500) return { width: 480, height: 500 };
+		if (window.innerWidth >= 1600) return { width: 360, height: 400 };
+		return { width: 300, height: 350 };
+	});
+
+	// Check screen width
+	$effect(() => {
+		if (!browser) return;
+
+		function checkWidth() {
+			isDesktop = window.innerWidth >= 1024;
+		}
+
+		checkWidth();
+		window.addEventListener('resize', checkWidth);
+
+		return () => window.removeEventListener('resize', checkWidth);
+	});
+
+	function handleNodeClick(nodeData: NodeClickData | null) {
+		// Don't show preview for center node (current page)
+		if (nodeData?.type === 'center') return;
+		selectedNode = nodeData;
+	}
+
+	function handlePreviewClose() {
+		selectedNode = null;
+	}
+
+	function handleNavigate(href: string) {
+		selectedNode = null;
+		goto(href);
 	}
 </script>
 
@@ -129,6 +175,32 @@
 						</div>
 					</div>
 				{/if}
+
+			{#if isDesktop && data.item}
+				<div class="sidebar-section galaxy-section">
+					<span class="sidebar-label">Related</span>
+					<div class="galaxy-container">
+						<MiniGalaxy
+							currentItem={data.item}
+							currentType="projects"
+							width={galaxySize.width}
+							height={galaxySize.height}
+							onNodeClick={handleNodeClick}
+						/>
+						{#if selectedNode}
+							<PreviewCard
+								item={selectedNode.item}
+								type={selectedNode.type}
+								tagName={selectedNode.tagName}
+								position={selectedNode.position}
+								containerBounds={galaxySize}
+								onClose={handlePreviewClose}
+								onNavigate={handleNavigate}
+							/>
+						{/if}
+					</div>
+				</div>
+			{/if}
 
 			</aside>
 		</div>

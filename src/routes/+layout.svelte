@@ -8,7 +8,9 @@
 	let { children } = $props();
 
 	const isHome = $derived($page.url.pathname === '/');
-	const isSubpage = $derived(!isHome);
+	const isGame = $derived($page.url.pathname.startsWith('/game'));
+	const isFullscreen = $derived(isHome || isGame);
+	const isSubpage = $derived(!isFullscreen);
 
 	onMount(() => {
 		// Process external links to open in new tabs
@@ -50,8 +52,8 @@
 	<link rel="icon" href="/favicon.ico" />
 </svelte:head>
 
-<div class="site" class:is-home={isHome}>
-	{#if !isHome}
+<div class="site" class:is-home={isHome} class:is-game={isGame}>
+	{#if isSubpage}
 		<header>
 			<nav>
 				<a href="/" class="site-name has-logo">
@@ -71,7 +73,7 @@
 		{@render children()}
 	</main>
 
-	{#if !isHome}
+	{#if isSubpage}
 		<footer>
 			<p>&copy; {new Date().getFullYear()} Andrew Marx | <a href="https://github.com/atmarx/">github</a></p>
 		</footer>

@@ -1,16 +1,27 @@
 <script>
 	import PhysicsPlayground from '$lib/components/PhysicsPlayground.svelte';
+	import Cutscene from '$lib/components/Cutscene.svelte';
 	import logoLarge from '$lib/assets/x-300.png';
 	import { goto } from '$app/navigation';
 
 	let highlightType = $state(null);
 	let triggerSwirl = $state(null);
 	let triggerShake = $state(null);
+	let triggerReset = $state(null);
+	let score = $state(0);
+
+	// Cutscene state
+	let cutsceneActive = $state(false);
+	let cutsceneScore = $state(0);
+	let cutsceneHealth = $state(25);
 	let springLength = $state(425);
 	let springStiffnessSlider = $state(30);  // Slider value 1-60
 	let springStiffness = $derived(springStiffnessSlider / 100000);
+	let driveFrequency = $state(0);          // 0-100 → mapped to Hz
+	let driveExcitement = $state(0);         // 0-100 → amplitude
 	let mobileDrawerOpen = $state(false);
 	let isMobile = $state(false);
+	let prefersReducedMotion = $state(false);
 
 	// Blob click popover state
 	let selectedBlob = $state(null);
@@ -28,6 +39,25 @@
 		triggerShake = fn;
 	}
 
+	function handleResetReady(fn) {
+		triggerReset = fn;
+	}
+
+	function handleScoreChange(newScore) {
+		score = newScore;
+	}
+
+	function handleShipEscaped(data) {
+		cutsceneScore = data.score;
+		cutsceneHealth = data.shipHealth;
+		cutsceneActive = true;
+	}
+
+	function handleCutsceneComplete() {
+		cutsceneActive = false;
+		goto(`/game?score=${cutsceneScore}&health=${cutsceneHealth}`);
+	}
+
 	function toggleDrawer() {
 		mobileDrawerOpen = !mobileDrawerOpen;
 	}
@@ -38,28 +68,25 @@
 			return;
 		}
 
-		selectedBlob = data;
-
-		// Position floating card near blob (desktop only)
 		if (!isMobile) {
-			const padding = 20;
-			const cardWidth = 280;
-			const cardHeight = 120;
-
-			// Smart positioning - prefer right of blob, but flip if too close to edge
-			let left = data.position.x + 40;
-			let top = data.position.y - cardHeight / 2;
-
-			// Flip to left if too close to right edge
-			if (left + cardWidth > window.innerWidth - padding) {
-				left = data.position.x - cardWidth - 40;
+			// Desktop: physics tooltips handle display inside canvas.
+			// This callback fires when user clicks the tooltip → navigate directly.
+			if (data.type === 'tag') {
+				goto(`/tag/${data.tagName}`);
+			} else {
+				goto(`/${data.type}s/${data.slug}`);
 			}
-
-			// Clamp vertical position
-			top = Math.max(padding, Math.min(window.innerHeight - cardHeight - padding, top));
-
-			popoverStyle = `left: ${left}px; top: ${top}px;`;
+			return;
 		}
+
+		// Mobile: use bottom sheet
+		selectedBlob = data;
+	}
+
+	let centerHidden = $state(false);
+
+	function handleCenterDestroyed(dead) {
+		centerHidden = dead;
 	}
 
 	function dismissPopover() {
@@ -76,7 +103,7 @@
 		}
 	}
 
-	// Check for mobile on mount
+	// Check for mobile + reduced motion on mount
 	import { onMount } from 'svelte';
 	onMount(() => {
 		const checkMobile = () => {
@@ -84,7 +111,22 @@
 		};
 		checkMobile();
 		window.addEventListener('resize', checkMobile);
-		return () => window.removeEventListener('resize', checkMobile);
+
+		const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+		prefersReducedMotion = motionQuery.matches;
+		const onMotionChange = (e) => {
+			prefersReducedMotion = e.matches;
+			if (e.matches) {
+				driveFrequency = 0;
+				driveExcitement = 0;
+			}
+		};
+		motionQuery.addEventListener('change', onMotionChange);
+
+		return () => {
+			window.removeEventListener('resize', checkMobile);
+			motionQuery.removeEventListener('change', onMotionChange);
+		};
 	});
 </script>
 
@@ -93,61 +135,56 @@
 		{highlightType}
 		{springLength}
 		{springStiffness}
+		driveFrequency={prefersReducedMotion ? 0 : driveFrequency}
+		driveExcitement={prefersReducedMotion ? 0 : driveExcitement}
+		reducedMotion={prefersReducedMotion}
 		{isMobile}
 		onSwirlReady={handleSwirlReady}
 		onShakeReady={handleShakeReady}
 		onBlobClick={handleBlobClick}
+		onCenterDestroyed={handleCenterDestroyed}
+		onResetReady={handleResetReady}
+		onScoreChange={handleScoreChange}
+		onShipEscaped={handleShipEscaped}
 	/>
 
+	<!-- Cutscene overlay -->
+	{#if cutsceneActive}
+		<Cutscene
+			score={cutsceneScore}
+			shipHealth={cutsceneHealth}
+			onComplete={handleCutsceneComplete}
+		/>
+	{/if}
+
 	<!-- Center circle with logo and greeting -->
-	<a href="/about" class="center-identity">
+	<a href="/about" class="center-identity" style:opacity={centerHidden || cutsceneActive ? 0 : 1} style:pointer-events={centerHidden || cutsceneActive ? 'none' : 'auto'} style:transition="opacity 0.5s">
 		<div class="center-badge">
 			<img src={logoLarge} alt="xram.net" class="center-logo" />
 			<span class="center-greeting">Hi, I'm Andrew</span>
 		</div>
 	</a>
 
-	<!-- Blob detail popover -->
-	{#if selectedBlob}
-		<!-- Backdrop for dismissing -->
+	<!-- Mobile: Bottom sheet popover -->
+	{#if selectedBlob && isMobile}
 		<button class="popover-backdrop" onclick={dismissPopover} aria-label="Close"></button>
-
-		<!-- Desktop: Floating card -->
-		{#if !isMobile}
-			<div class="floating-card" style={popoverStyle}>
-				<button class="card-close" onclick={dismissPopover}>×</button>
-				<h3 class="card-title" class:project={selectedBlob.type === 'project'} class:musing={selectedBlob.type === 'musing'} class:tag={selectedBlob.type === 'tag'}>
-					{selectedBlob.title}
-				</h3>
-				{#if selectedBlob.description}
-					<p class="card-description">{selectedBlob.description}</p>
-				{/if}
-				<button class="card-view-btn" onclick={navigateToBlob}>
-					View {selectedBlob.type === 'tag' ? 'Tagged Items' : selectedBlob.type} →
-				</button>
-			</div>
-		{/if}
-
-		<!-- Mobile: Bottom sheet -->
-		{#if isMobile}
-			<div class="blob-sheet">
-				<button class="sheet-close" onclick={dismissPopover}>×</button>
-				<h3 class="sheet-title" class:project={selectedBlob.type === 'project'} class:musing={selectedBlob.type === 'musing'} class:tag={selectedBlob.type === 'tag'}>
-					{selectedBlob.title}
-				</h3>
-				{#if selectedBlob.description}
-					<p class="sheet-description">{selectedBlob.description}</p>
-				{/if}
-				<button class="sheet-view-btn" onclick={navigateToBlob}>
-					View {selectedBlob.type === 'tag' ? 'Tagged Items' : selectedBlob.type} →
-				</button>
-			</div>
-		{/if}
+		<div class="blob-sheet">
+			<button class="sheet-close" onclick={dismissPopover}>×</button>
+			<h3 class="sheet-title" class:project={selectedBlob.type === 'project'} class:musing={selectedBlob.type === 'musing'} class:tag={selectedBlob.type === 'tag'}>
+				{selectedBlob.title}
+			</h3>
+			{#if selectedBlob.description}
+				<p class="sheet-description">{selectedBlob.description}</p>
+			{/if}
+			<button class="sheet-view-btn" onclick={navigateToBlob}>
+				View {selectedBlob.type === 'tag' ? 'Tagged Items' : selectedBlob.type} →
+			</button>
+		</div>
 	{/if}
 
 	<!-- Desktop: Bottom control bar -->
 	{#if !isMobile}
-		<div class="control-bar">
+		<div class="control-bar" style:opacity={cutsceneActive ? 0 : 1} style:pointer-events={cutsceneActive ? 'none' : 'auto'} style:transition="opacity 0.5s">
 			<div class="control-section filters">
 				<button
 					class="control-btn projects"
@@ -177,7 +214,18 @@
 					onclick={() => triggerSwirl?.()}
 					disabled={!triggerSwirl}
 				>Swirl</button>
+				<button
+					class="control-btn reset"
+					onclick={() => triggerReset?.()}
+					disabled={!triggerReset}
+				>Reset</button>
 			</div>
+
+			{#if score > 0}
+				<div class="control-section score">
+					<span class="score-display">{score.toLocaleString()}</span>
+				</div>
+			{/if}
 
 			<div class="control-section sliders">
 				<label class="slider-group">
@@ -188,6 +236,16 @@
 					<span>Springiness</span>
 					<input type="range" min="1" max="60" bind:value={springStiffnessSlider} />
 				</label>
+				{#if !prefersReducedMotion}
+					<label class="slider-group">
+						<span>Frequency</span>
+						<input type="range" min="0" max="100" bind:value={driveFrequency} />
+					</label>
+					<label class="slider-group">
+						<span>Excitement</span>
+						<input type="range" min="0" max="100" bind:value={driveExcitement} />
+					</label>
+				{/if}
 			</div>
 
 			<div class="control-section nav-links">
@@ -208,7 +266,7 @@
 	{/if}
 
 	<!-- Mobile: Drawer toggle + Drawer -->
-	{#if isMobile}
+	{#if isMobile && !cutsceneActive}
 		<button class="drawer-toggle" onclick={toggleDrawer} class:open={mobileDrawerOpen}>
 			<span class="drawer-icon">{mobileDrawerOpen ? '×' : '☰'}</span>
 		</button>
@@ -248,7 +306,15 @@
 						onclick={() => triggerSwirl?.()}
 						disabled={!triggerSwirl}
 					>Swirl</button>
+					<button
+						class="control-btn reset"
+						onclick={() => triggerReset?.()}
+						disabled={!triggerReset}
+					>Reset</button>
 				</div>
+				{#if score > 0}
+					<div class="drawer-score">Score: {score.toLocaleString()}</div>
+				{/if}
 			</div>
 
 			<div class="drawer-section">
@@ -261,6 +327,16 @@
 					<span>Springiness</span>
 					<input type="range" min="1" max="60" bind:value={springStiffnessSlider} />
 				</label>
+				{#if !prefersReducedMotion}
+					<label class="slider-group">
+						<span>Frequency</span>
+						<input type="range" min="0" max="100" bind:value={driveFrequency} />
+					</label>
+					<label class="slider-group">
+						<span>Excitement</span>
+						<input type="range" min="0" max="100" bind:value={driveExcitement} />
+					</label>
+				{/if}
 			</div>
 
 			<div class="drawer-section nav">
@@ -377,6 +453,7 @@
 
 		.control-section.filters { grid-row: 1; }
 		.control-section.actions { grid-row: 1; }
+		.control-section.score { grid-row: 1; }
 		.control-section.sliders { grid-row: 1; }
 		.control-section.nav-links {
 			grid-row: 2;
@@ -498,6 +575,31 @@
 		background: rgba(100, 100, 100, 0.4);
 		border-color: rgba(180, 180, 180, 0.8);
 		box-shadow: 0 0 12px rgba(180, 180, 180, 0.4);
+	}
+
+	.control-btn.reset {
+		background: rgba(255, 120, 80, 0.2);
+		border-color: rgba(255, 120, 80, 0.4);
+		color: rgb(255, 160, 120);
+	}
+
+	.control-btn.reset:hover:not(:disabled) {
+		background: rgba(255, 120, 80, 0.3);
+	}
+
+	.score-display {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: rgb(255, 215, 80);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.drawer-score {
+		margin-top: 0.5rem;
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: rgb(255, 215, 80);
+		font-variant-numeric: tabular-nums;
 	}
 
 	/* Sliders */

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 /* Variables */
 :root {
 	--color-bg: #0f131e;
@@ -9,6 +11,7 @@
 	--color-accent-hover: #8bb4ff;
 	--font-sans: system-ui, -apple-system, sans-serif;
 	--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+	--font-pixel: 'Press Start 2P', monospace;
 	--max-width: 800px;
 }
 
@@ -94,6 +97,10 @@ tr:hover td {
 	background: rgba(255, 255, 255, 0.06);
 }
 
+hr {
+	margin: 2em auto;
+}
+
 /* Layout */
 .site {
 	min-height: 100vh;
@@ -168,8 +175,8 @@ nav {
 
 main {
 	flex: 1;
-	max-width: var(--max-width);
 	width: 100%;
+	max-width: var(--max-width);
 	margin: 0 auto;
 	padding: 2rem;
 }
@@ -180,7 +187,8 @@ main {
 	overflow: hidden;
 }
 
-.site.is-home main {
+.site.is-home main,
+.site.is-game main {
 	max-width: none;
 	padding: 0;
 	margin: 0;
@@ -247,6 +255,19 @@ footer {
 .projects-grid {
 	display: grid;
 	gap: 1.5rem;
+	grid-template-columns: 1fr;
+}
+
+@media (min-width: 800px) {
+	.projects-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (min-width: 1200px) {
+	.projects-grid {
+		grid-template-columns: repeat(3, 1fr);
+	}
 }
 
 .empty {
@@ -312,6 +333,19 @@ footer {
 .musings-list {
 	display: grid;
 	gap: 1.5rem;
+	grid-template-columns: 1fr;
+}
+
+@media (min-width: 800px) {
+	.musings-list {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (min-width: 1200px) {
+	.musings-list {
+		grid-template-columns: repeat(3, 1fr);
+	}
 }
 
 .musing-card {
@@ -578,6 +612,52 @@ footer {
 .tag-card time {
 	color: var(--color-text-muted);
 	font-size: 0.8rem;
+}
+
+/* Galaxy in sidebar */
+.galaxy-section {
+	margin-top: 1.5rem;
+}
+
+.galaxy-container {
+	position: relative;
+	border-radius: 8px;
+	background: rgba(0, 0, 0, 0.2);
+}
+
+/* Wider content on large screens */
+@media (min-width: 1200px) {
+	:root {
+		--max-width: 1100px;
+	}
+
+	.musing-layout,
+	.project-layout {
+		grid-template-columns: 1fr 320px;
+	}
+}
+
+@media (min-width: 1600px) {
+	:root {
+		--max-width: 1400px;
+	}
+
+	.musing-layout,
+	.project-layout {
+		grid-template-columns: 1fr 380px;
+	}
+}
+
+@media (min-width: 2500px) {
+	:root {
+		--max-width: 1800px;
+	}
+
+	.musing-layout,
+	.project-layout {
+		grid-template-columns: 1fr 500px;
+		gap: 12rem;
+	}
 }
 
 /* Responsive: stack on small screens */

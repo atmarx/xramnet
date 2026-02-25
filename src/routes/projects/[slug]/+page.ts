@@ -9,7 +9,8 @@ export async function load({ params }) {
 		return {
 			type: 'post' as const,
 			content: project.content,
-			metadata: project.metadata
+			metadata: project.metadata,
+			item: project  // Full ContentItem for MiniGalaxy
 		};
 	}
 
